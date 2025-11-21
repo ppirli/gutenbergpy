@@ -45,12 +45,13 @@ class RdfParser:
             file_path = path.join(GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY,dir,'pg%s.rdf'%(dir))
             doc = etree.parse(file_path,etree.ETCompatXMLParser())
 
+            book_id = len(result.books)+1
             res = Fields.FIELD_COUNT * [-1]
             for idx_field, pt in enumerate(result.field_sets):
                 if not pt.needs_book_id():
                     res[idx_field] = pt.do(doc)
                 else:
-                    res[idx_field] = pt.do(doc,idx+1)
+                    res[idx_field] = pt.do(doc,book_id)
 
             gutenberg_book_id = int(dir)
 
