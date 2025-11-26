@@ -44,8 +44,6 @@ class RdfParser:
                 continue
             if idx == 54379:
                 continue
-            if idx == 54380:
-                continue
             processing_str = "Processing progress: %d / %d" % (idx,total)
             Utils.update_progress_bar(processing_str,idx,total)
             file_path = path.join(GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY,dir,'pg%s.rdf'%(dir))
