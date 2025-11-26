@@ -38,42 +38,41 @@ class RdfParser:
         total = len(dirs)
 
         for idx, dir in enumerate(dirs):
-            if not str(dir).isdigit():
+            try:
+                if not str(dir).isdigit():
+                    continue
+                processing_str = "Processing progress: %d / %d" % (idx,total)
+                Utils.update_progress_bar(processing_str,idx,total)
+                file_path = path.join(GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY,dir,'pg%s.rdf'%(dir))
+                doc = etree.parse(file_path,etree.ETCompatXMLParser())
+    
+                book_id = len(result.books)+1
+                res = Fields.FIELD_COUNT * [-1]
+                for idx_field, pt in enumerate(result.field_sets):
+                    if not pt.needs_book_id():
+                        res[idx_field] = pt.do(doc)
+                    else:
+                        res[idx_field] = pt.do(doc,book_id)
+    
+                gutenberg_book_id = int(dir)
+    
+                date_issued_x   = doc.xpath('//dcterms:issued/text()', namespaces=GutenbergCacheSettings.NS)
+                num_downloads_x = doc.xpath('//pgterms:downloads/text()',namespaces=GutenbergCacheSettings.NS)
+    
+                date_issued       = '1000-10-10' if not date_issued_x or date_issued_x[0] =='None' else str(date_issued_x[0])
+                num_downloads     =  -1 if not num_downloads_x else int(num_downloads_x[0])
+                publisher_id      =  -1 if not res[Fields.PUBLISHER] else res[Fields.PUBLISHER][0]
+                rights_id         =  -1 if not res[Fields.RIGHTS]    else res[Fields.RIGHTS][0]
+                language_id       =  -1 if not res[Fields.LANGUAGE] else res[Fields.LANGUAGE][0]
+                bookshelf_id      =  -1 if not res[Fields.BOOKSHELF] else res[Fields.BOOKSHELF][0]
+                type_id           =  -1 if not  res[Fields.TYPE]    else  res[Fields.TYPE][0]
+    
+                newbook = Book(publisher_id, rights_id, language_id, bookshelf_id,
+                               gutenberg_book_id, date_issued, num_downloads, res[Fields.TITLE],
+                               res[Fields.SUBJECT], type_id, res[Fields.AUTHOR], res[Fields.FILES])
+    
+                result.books.append(newbook)
+            except OSError:
                 continue
-            if idx == 14419:
-                continue
-            if idx == 54379:
-                continue
-            processing_str = "Processing progress: %d / %d" % (idx,total)
-            Utils.update_progress_bar(processing_str,idx,total)
-            file_path = path.join(GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY,dir,'pg%s.rdf'%(dir))
-            doc = etree.parse(file_path,etree.ETCompatXMLParser())
-
-            book_id = len(result.books)+1
-            res = Fields.FIELD_COUNT * [-1]
-            for idx_field, pt in enumerate(result.field_sets):
-                if not pt.needs_book_id():
-                    res[idx_field] = pt.do(doc)
-                else:
-                    res[idx_field] = pt.do(doc,book_id)
-
-            gutenberg_book_id = int(dir)
-
-            date_issued_x   = doc.xpath('//dcterms:issued/text()', namespaces=GutenbergCacheSettings.NS)
-            num_downloads_x = doc.xpath('//pgterms:downloads/text()',namespaces=GutenbergCacheSettings.NS)
-
-            date_issued       = '1000-10-10' if not date_issued_x or date_issued_x[0] =='None' else str(date_issued_x[0])
-            num_downloads     =  -1 if not num_downloads_x else int(num_downloads_x[0])
-            publisher_id      =  -1 if not res[Fields.PUBLISHER] else res[Fields.PUBLISHER][0]
-            rights_id         =  -1 if not res[Fields.RIGHTS]    else res[Fields.RIGHTS][0]
-            language_id       =  -1 if not res[Fields.LANGUAGE] else res[Fields.LANGUAGE][0]
-            bookshelf_id      =  -1 if not res[Fields.BOOKSHELF] else res[Fields.BOOKSHELF][0]
-            type_id           =  -1 if not  res[Fields.TYPE]    else  res[Fields.TYPE][0]
-
-            newbook = Book(publisher_id, rights_id, language_id, bookshelf_id,
-                           gutenberg_book_id, date_issued, num_downloads, res[Fields.TITLE],
-                           res[Fields.SUBJECT], type_id, res[Fields.AUTHOR], res[Fields.FILES])
-
-            result.books.append(newbook)
 
         return result
